@@ -1,0 +1,79 @@
+#!/bin/sh
+
+
+if test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvst [OPTIONS] [-o "CVSOPTIONS"] [DIR] [FILE ...]
+
+Show status of project, display modified files only.
+Traverse the whole project per default.
+
+DIR: show only status of files in DIR
+
+OPTIONS
+ -a : list unmodified files 
+ -o : add the options to cvs status
+ -q : short format
+ -v : verbose format
+
+ENDL
+	exit
+fi
+
+source cvscommon.sh
+
+#FIND="$CFGFILE"
+OPTM="-m"
+OPTVERB="-Q"
+CVSOPTS=""
+ALL=1
+
+L=1
+until [ "$L" = "0" ] || test -z $1; do
+		L=0
+	if test -e $1; then
+		ALL=0
+		if test -d $1; then
+			OPTL="-l"
+		else
+			OPTM=""
+			OPTVERB="-q"
+		fi
+	else
+		case $1 in
+			"-a") 
+				#FIND="$CVSDIRNAME/config.sh"
+				OPTM=""
+				L=1
+				;;
+			"-o")
+				CVSOPTS=$2
+				shift
+				L=1
+				;;
+			"-q") OPTVERB="-q";L=1;;
+			"-v") OPTVERB="";L=1;;
+		esac
+		if [ "$L" = "1" ]; then 
+			shift
+		fi
+	fi 
+done
+
+if [ "$ALL" = "1" ]; then
+	chdir $CVSPROJECTROOT
+fi
+# find repository root
+#until test -e $FIND; do 
+#	CPATH="$PWD $CPATH"
+#	chdir ..
+#	if [ "$PWD" = "/" ]; then
+#		echo "No cvs-patched project found"
+#		exit
+#	fi
+#done
+
+
+run cvs -q status $OPTVERB $OPTM $OPTL $CVSOPTS $* 
+
+

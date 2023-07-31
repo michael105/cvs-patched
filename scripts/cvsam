@@ -1,0 +1,31 @@
+#!/bin/sh
+
+
+# Commit all changes of the project,
+# commit message "cvsam: date ($USER)"
+
+
+if [ "$1" = "-h" ]; then
+	cat << 'ENDL'
+cvsam [LOG MESSAGE]
+
+commits all project changes into the repository.
+
+Without arguments, the message "cvsam: date ($USER)" is used.
+
+With arguments, all arguments are used as log message.
+(No quotation marks needed / allowed are only single ' marks)
+ENDL
+	exit
+fi
+
+source cvscommon.sh
+
+if [ ! -z $1 ]; then
+	msg="$*"
+else
+	msg="cvsam: `date '+%D %R'` ($USER)" # UTC%:::z'`'"
+fi
+
+cvsm -a -M $msg
+

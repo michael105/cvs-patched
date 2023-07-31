@@ -1,0 +1,96 @@
+#!/bin/sh
+
+if test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvsm [OPTIONS] [FILE FILE..] [DIR DIR..] [-M LOG MESSAGE]
+
+commit changes of versioned files,
+per default stay within the current directory.
+
+Uses the message "cvsm: date ($USER)"
+if LOG MESSAGE is not supplied.
+Single quotation marks aren't allowed.
+
+OPTIONS
+ -a           : commit all changes within the project
+ -y           : ask, before doing any modifications
+ -m 'LOG MSG' : Supply log message, mandatory quotation marks
+ -M LOG MSG   : Needs to be the last argument, after optional explicitely supplied FILES
+                and DIRS. Everything following -M are used as log message
+
+ENDL
+	exit
+fi
+ #-z : set the commit message to "cvsm: date ($USER)"
+
+source cvscommon.sh
+
+OPTM="-m 'cvsm: `date '+%D %R'` ($USER)'" # UTC%:::z'`'"
+
+#FIND="."
+OPTR=""
+OPTL=""
+OPTM=""
+
+
+L=1
+until [ "$L" = "0" ] || [ -z $1 ]; do
+	case $1 in
+		"-a") 
+			chdir $CVSPROJECTROOT
+			OPTR="-R"
+			;;
+		"-m")
+			OPTM="-m '$2'"
+			shift
+			;;
+		"-M")
+			shift
+			OPTM="-m '$*'"
+			L="0" 
+			;;
+
+		"-z")
+			OPTM="-m 'cvsm: `date '+%D %R'` ($USER)'" # UTC%:::z'`'"
+			;;
+		"-y")
+			CONFIRM=1
+			;;
+
+		*) if test -e $1; then
+			FILES="$FILES $1"
+			if test -d $1; then
+				OPTL="-l"
+			fi
+		else 
+			error "No such option or file: $1"
+		fi
+		;;
+	esac
+	shift
+done
+
+
+#verbose cvs commit $OPTR $OPTM $*
+run cvs commit $OPTR $OPTM $FILES && verbose Ok && echo
+
+
+
+exit
+
+# should save and reuse the "last" msg.
+# (also as template)
+# 
+# add option to cvs status to print only the file names.
+# use this, to select files and set different log messages 
+# within the editor.
+# (Bsp:
+>M file1.c
+>M file2.c
+Log message file1/file2
+>N file3.c
+New file created
+
+
+
+

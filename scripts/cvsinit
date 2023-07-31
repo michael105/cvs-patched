@@ -1,0 +1,68 @@
+#!/bin/sh
+
+if test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvsinit
+
+Initialize an existing cvs project as cvs-patched project.
+
+Has to be executed within the root directory of the project,
+and writes the file '.cvs_patched.cfg'
+
+
+
+(Can be moved later, if needed, it marks the root directory,
+and has some settings.)
+
+ENDL
+	exit
+fi
+
+if [ -z "$CVSDIRNAME" ]; then
+	if [ -d ".cvs" ]; then
+		CVSDIRNAME='.cvs'
+	else
+		if [ -d "CVS" ]; then
+			CVSDIRNAME="CVS"
+		else 
+			error No cvs project directory found.
+		fi
+	fi
+fi
+
+if [ ! -e "$CVSDIRNAME/Root" ]; then
+	error "CVSDIRNAME/Root not found"
+fi
+
+CVSROOT=`cat "$CVSDIRNAME/Root"`
+
+CVSNOCFG=1
+source cvscommon.sh
+
+if [ -e "$CVSPROJECTCFG" ]; then
+	error "$CVSPROJECTCFG exists. Already initialized"
+fi
+
+echo CC "$CVSPROJECTCFG"
+
+cat << ENDL > $CVSPROJECTCFG
+# This file marks the root directory of the cvs-patched project
+
+# environment settings
+# Environment variables take precedence,
+# if already present.
+# It is possible to have overlapping cvs projects or different repositories, 
+# by setting the environment variables.
+# ( export CVSDIRNAME='.cvs2', e.g. )
+
+setenv CVSROOT $CVSROOT
+
+setenv CVSDIRNAME $CVSDIRNAME
+
+
+ENDL
+
+verbose Ok
+echo
+
+

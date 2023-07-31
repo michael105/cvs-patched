@@ -1,0 +1,57 @@
+#!/bin/sh
+
+
+if test -z $1 || test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvsnew PROJECTNAME [OPTIONS for cvsadd] [FILE...]
+
+Start a new cvs-patched project in the current directory 
+and setup the repository in $CVSROOT. 
+
+Create .cvs_patched.cfg
+If $CVSROOT is not present,
+create $HOME/CVSROOT and init a repository there.
+
+Add optional [FILE...] with cvsadd.
+
+ENDL
+	exit
+fi
+
+CVSNOCFG=1
+source cvscommon.sh
+
+if [ -e "$CVSPROJECTCFG" ]; then
+	error "$CVSPROJECTCFG is present. Will not overwrite."
+fi
+
+if [ ! -d $CVSROOT ]; then
+	abortyesno "CVSROOT not found. Create $CVSROOT ?"
+	cvs_make_cvsroot
+fi
+
+if [ -d $CVSDIRNAME ]; then
+	echo $CVSDIRNAME is already present in the current directory
+	echo This seems to be already under source control,
+	echo "projectname: `sed -E 's|/.*||' $CVSDIRNAME/Repository`"
+	echo abort
+	exit
+fi
+
+(run cvs import -I "'*'" -m "'cvsnew $1'" $1 $1 New && \
+	run cvs checkout -d . $1 && \
+	cvsinit) || error "Error. Abort"
+
+echo " ( next: ) cvsadd"
+
+if [ -z $2 ]; then
+	verbose Ok
+	echo
+	exit
+fi
+
+shift
+
+cvsadd $*
+
+

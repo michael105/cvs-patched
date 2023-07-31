@@ -1,0 +1,159 @@
+#!/bin/sh
+
+
+if test -z $1 || test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvsadd [OPTIONS] [CVSOPTIONS] FILE...
+
+Add files to the project, and commit them into the repository.
+The default commit message is "Initial commit".
+
+If cvsadd is executed in a subdirectory of a project,
+which is not versioned yet, this directory and
+it's parents up to the first versioned directory are added.
+(Asking for confirmation, before doing any changes)
+
+OPTIONS:
+ -g PATTERN     add all files recursively which are found with "find -name PATTERN"
+ -m "log msg"   set commit message
+ -M             Open an editor for the commit message
+ -z             Set the commit message to "Initial commit, date ($USER)" (default)
+ -t "DESC"      Set the description of the file(s) to DESC
+ -T             Open an editor to write the description of the added file(s)
+ -y             Ask for confirmation before doing any changes
+
+ Unrecognized options are passed as CVSOPTIONS to cvs add and cvs commit
+
+ENDL
+	exit
+fi
+
+source cvscommon.sh
+
+#OPTM=""
+loop=1
+FILES=""
+OPTM="-m 'Initial commit, `date '+%D %R'` ($USER)'" # UTC%:::z'`'"
+OPT_t=""
+OPT_T=""
+
+while [ "$loop" = "1" ]; do
+	loop=0
+	if [ $1 = "-m" ]; then
+		OPTM="-m '$2'"
+		shift 2
+		loop=1
+	fi
+	if [ $1 = "-t" ]; then
+		OPT_t="'$2'"
+		shift 2
+		loop=1
+	fi
+	if [ $1 = "-T" ]; then
+		OPT_T=1
+		shift 
+		loop=1
+	fi
+	if [ $1 = "-g" ]; then
+		FILES=`find . -name "$2"`
+		echo About to add these files.
+		echo $FILES
+		abortyesno "Continue ?"
+		FILES=`echo $FILES | tr '\n' ' '`
+		shift 2
+		loop=1
+	fi
+	if [ $1 = "-z" ]; then
+		OPTM="-m 'Initial commit, `date '+%D %R'` ($USER)'" # UTC%:::z'`'"
+		shift 
+		loop=1
+	fi
+	if [ $1 = "-M" ]; then
+		OPTM=""
+		shift 
+		loop=1
+	fi
+	if [ $1 = "-y" ]; then
+		CONFIRM="Y"
+		shift 
+		loop=1
+	fi
+	if [ $1 = "-Y" ]; then
+	#	CONFIRM="N" 
+	# (seems dangerous, add also adds directory hierarchies..)
+		shift 
+		loop=1
+	fi
+
+done
+
+F2=""
+until [ -z $1 ]; do
+	F2="$F2 $1"
+	shift
+done
+FILES="$F2 $FILES"
+
+# traverse directories, and add the whole directory hierarchy when confirmed
+function ensurerepo(){
+	local CP=$PWD
+	chdir `dirname $1`
+	if test ! -d $CVSDIRNAME; then
+
+		until test -d $CVSDIRNAME; do 
+			CPATH="$PWD $CPATH"
+			chdir ..
+			if [ "$PWD" = "/" ]; then
+				echo "No cvs-patched project found"
+				exit
+			fi
+		done
+
+		echo "Add to CVS project: `sed -E 's|/.*||' $CVSDIRNAME/Repository`"
+		echo $CPATH | tr ' ' '\n' | sed -e 's/^/New directory: /'
+		abortyesno "Continue?"
+
+		for i in $CPATH; do
+			cvs add $i 
+		done
+	fi
+	chdir $CP
+}
+
+
+for f in $FILES; do
+	if test ! -e $f; then
+		error "$f doesn't exist"
+	fi
+done
+
+for f in $FILES; do
+	if test -e $f; then # don't check for options
+		ensurerepo $f
+	fi
+done
+
+verbose cvs add "$OPTM" $FILES 
+run cvs add "$OPTM" $FILES || abortyesno "cvs returned $?\nContinue?"
+
+verbose cvs commit "$OPTM" $FILES
+run cvs commit "$OPTM" $FILES || ( ( test -n "$OPT_t" || test -n "$OPT_T" ) && abortyesno "cvs returned $?\nContinue?" )
+
+if test -n "$OPT_T"; then
+	TMPF=`mktemp .cvs-desc.txt.XXX`
+	cat << ENDL > "$TMPF"
+# Lines starting with # will be removed.
+# Description for the cvs entry of the following files:
+ENDL
+	echo "$FILES" | tr ' ' '\n' | sed -e 's/^/# /' >> "$TMPF"
+	edit $TMPF
+	sed -i -e '/^#/d' "$TMPF"
+	run cvsdesc -B -T "$TMPF" $FILES
+	rm "$TMPF"
+else
+	if [ -n "$OPT_t" ]; then
+		run cvsdesc -B -t $OPT_t $FILES
+	fi
+fi
+
+

@@ -1,0 +1,102 @@
+#!/bin/sh
+
+if test -z $1 || test "$1" = "-h" || test -z $2 ; then
+	cat <<'ENDL'
+cvsmove FROM TO 
+
+Move files within the project.
+The history and log information are kept.
+This copies the according files within the repository,
+removes 'from' and does a checkout for 'to'. 
+
+Does several check before doing any modifications,
+and asks for confirmation.
+
+options
+ -Y Don't ask for confirmation, assume "y"
+
+ENDL
+	exit
+fi
+
+source cvscommon.sh
+
+
+if [ ! -z $1 ] && [ $1 = "-Y" ]; then
+	CONFIRM="N"
+	shift
+fi
+
+FROM=$1
+TO=$2
+
+if [ -z $FROM ] || [ -z $TO ]; then
+	echo missing arguments
+	exit 1
+fi
+
+if [ -d $FROM ]; then
+	error Cannot move directories
+fi
+
+
+if [ ! -f $FROM ]; then
+	error $FROM not found, or no regular file
+fi
+
+if [ -d $TO ]; then
+	TO="$TO/$FROM"
+fi
+
+if [ -e $TO ]; then
+	error $TO exists
+fi
+
+
+cvs -QC status -Q $FROM | sed -n "/^\s*$FROM/q;q1"
+if [ ! $? = "0" ]; then
+	echo $FROM differs from the repository
+	echo need commit / update / ..
+	echo
+	run cvs -Q status -q $FROM
+	exit 1
+fi
+
+REM=`cvs -QC ls -w $FROM | sed 's/^\S*\s*//'`
+
+
+if [ ! -f $REM ]; then
+	error $REM not accessible
+fi
+
+REMTO=`dirname $REM`"/$TO,v"
+
+
+if [ -e $REMTO ]; then
+	error $REMTO exists
+fi
+
+if [ ! -d `dirname $REMTO` ]; then
+	echo `dirname $REMTO` doesn\'t exist.
+	echo please add the directory first to the repository
+	echo "(cvsadd `dirname $TO`)"
+	error Abort
+fi
+
+echo Move $FROM to $TO
+verbose "(Copy $REM to $REMTO - fetch $TO, delete $FROM)"
+
+abortyesno "Continue?"
+
+runC cp $REM $REMTO
+
+desc=`cvs -C log $FROM | sed -n -e '/^desc/,/^---/p' | sed -ne '/^---*/d;2,$p'`
+desc="'File moved from $FROM to $TO -  $desc'"
+run cvsdesc -t "$desc" $FROM
+
+run cvs update $TO && runC rm $FROM && \
+	run cvs remove $FROM && run cvs commit -m remove $FROM && \
+	run cvs commit -m "'Moved from $FROM to $TO'" -f $TO && \
+	verbose Ok
+
+

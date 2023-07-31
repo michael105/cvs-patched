@@ -1,0 +1,115 @@
+#!/bin/sh
+
+
+if test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvslu [OPTIONS] [LSOPTIONS]
+
+list unversioned files.
+
+all arguments are forwarded to ls,
+with the exception of the first arguments, 
+which are not forwarded if they are recognized.
+
+OPTIONS
+
+ -h : Show this help
+ -a : don't filter by the default cvsignore list, show also hidden files and directories
+ -r : list unregistered files and direcrories in the whole project recursively, 
+      doesn't descend into unregistered directories
+
+ENDL
+	exit
+fi
+
+source cvscommon.sh
+
+loop=1
+while test -n "$loop"; do
+	loop=""
+	case $1 in
+		-a ) opt_a="-ad"; loop=1;;
+		-r ) opt_r=1;loop=1;;
+	esac
+	if test -n "$loop"; then
+		shift $loop
+	fi
+done
+
+LSOPTIONS="$*"
+
+IGN='(core)|(RCSLOG)|(tags)|(TAGS)|(RCS)|(SCCS)|(\.make\.state)|(\.nse_depinfo)|(^\#)|(^\.\#)|(cvslog\.$)|(,$)|(CVS)|(CVS\.adm)|(\.del-$)|(\.a$)|(\.olb$)|(\.o$)|(\.obj$)|(\.so$)|(\.Z$)|(^~)|(\.old$)|(\.elc$)|(\.ln$)|(\.bak$)|(\.BAK$)|(\.orig$)|(\.rej$)|(\.exe$)|(_$$)|(\.svn$)|(\.git$)|(\.cvs$)|(\.swp$)|(^\.)'
+
+function listdir(){
+
+	if [ ! -d "$CVSDIRNAME" ]; then
+		error $CVSDIRNAME not found
+	fi
+
+	if [ ! -f "$CVSDIRNAME/Entries" ]; then
+		error $CVSDIRNAME/Entries not found
+	fi
+
+	local reg=`sed -E 's|^[^/]*/([^/]*).*|\1|;/^D$/d' $CVSDIRNAME/Entries`
+	local LIST
+
+	for l in `find . -maxdepth 1 -printf "%f\n"`; do
+		local a=1
+		for i in $reg; do
+			if [ $l = $i ]; then
+				a=0
+				break
+			fi
+		done
+		if [ $a = 1 ]; then
+			if [ "$l" != "." ]; then
+				LIST="$LIST $l"
+			fi
+		fi
+	done
+
+	if [ "$opt_a" = "-ad" ]; then
+		ls --color -ad $* $LIST $LSOPTIONS
+	else
+		ls --color $LSOPTIONS -d $* `echo $LIST | tr ' ' '\n' | sed -E "/$IGN/d"`
+	fi
+}
+
+function reclsdir(){
+	chdir "$1"
+	local CP=$PWD
+	echo "$CP"
+	listdir
+	echo
+	#local DIRS=`find . -maxdepth 1 -type d -printf "%f\n"`
+	local DIRS=`sed -nE 's|^D[^/]*/([^/]*).*|\1|p' $CVSDIRNAME/Entries | sort`
+	local i
+	for i in $DIRS; do
+		if [ "$i" != "." ]; then
+		chdir "$CP"
+		if [ -f "$i/$CVSDIRNAME/Entries" ]; then
+			#chdir $i 
+			reclsdir "$CP/$i"
+		fi
+		fi
+	done
+}
+
+if [ -z $opt_r ]; then
+	if test -d "$1"; then
+		CP=$PWD
+		for i in $@; do
+			chdir "$CP"
+			chdir "$i"
+			listdir
+		done
+	else
+		listdir
+	fi
+else # opt_r
+	reclsdir "$CVSPROJECTROOT"
+fi	
+
+
+
+

@@ -1,0 +1,51 @@
+#!/bin/sh
+
+
+if test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvsdiff [OPTIONS] [CVSOPTIONS] [DIR] [FILE]
+
+Show differences of files to their repository version.
+
+By default, for the project; 
+any file or directory as argument will show diffs only for that directory.
+
+The revision defaults to the version in the repository,
+but can be optionally specified with, e.g., -r 1.3
+Revision numbers are displayed with "cvs log FILE"
+
+
+OPTIONS
+
+ -h   : Show this help
+ -y   : Use a side to side diff format
+
+ENDL
+	exit
+fi
+
+source cvscommon.sh
+
+OPT_l=""
+fmt_y="--suppress-common-lines"
+cdroot=1
+
+for i in $*; do
+	if test -f "$i" || test -d "$i"; then # is a directory, little bit fuzzy
+		cdroot=0
+		OPT_l="-l"
+	fi
+	case $i in
+		-y )
+			OPT_y="$fmt_y"
+			;;
+	esac
+done
+
+if [ "$cdroot" == "1" ]; then
+	chdir $CVSPROJECTROOT
+fi
+
+run cvs diff $OPT_l $OPT_y $*
+
+

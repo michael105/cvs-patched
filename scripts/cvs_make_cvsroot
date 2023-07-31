@@ -1,0 +1,33 @@
+#!/bin/sh
+
+
+if test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvs_make_cvsroot
+
+Create the cvsroot repository directory ($CVSROOT),
+if the environment variable CVSROOT is not set
+CVSROOT defaults to $HOME/CVSROOT
+
+ENDL
+	exit
+fi
+
+
+if [ -z $CVSROOT ]; then
+	export CVSROOT=$HOME/CVSROOT
+fi
+
+if [ -e $CVSROOT ]; then
+	echo "CVSROOT ($CVSROOT) exists already."
+	echo Abort
+	exit
+fi
+
+mkdir $CVSROOT && \
+run cvs init
+
+
+
+
+
