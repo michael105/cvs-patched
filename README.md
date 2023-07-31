@@ -6,6 +6,16 @@ Currently this is a backup of some work.
 
 Should be usable, I use it myself, but there could be changes.
 
+Ehm, there should be changes as well. E.g., diff is the old version of some time ago.
+This started with another problem with git, I tried svn, then cvs, and realized -
+the repository is readable. And editable. So I started with some modifications.
+
+Since I tend to forget the different commands, I added the help texts.
+
+The code isn't the cleanest, but, to be honest, it's the same with cvs itself.
+However, it works. So. 
+
+
 -----
 
 A patched version of cvs, including several patchwork scripts.
