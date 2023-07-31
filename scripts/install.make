@@ -1,0 +1,15 @@
+cvs_make_cvsroot
+cvsadd
+cvsam
+cvscommon.sh
+cvsdesc
+cvsdiff
+cvshelp
+cvsinit
+cvslog
+cvsls
+cvslu
+cvsm
+cvsmove
+cvsnew
+cvst
