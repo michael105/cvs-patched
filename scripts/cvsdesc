@@ -1,0 +1,135 @@
+#!/bin/sh
+
+if [ -z "$1" ] || [ "$1" == "-h" ]; then
+	cat << 'ENDL'
+cvsdesc [-e] [-t 'DESCRIPTION'] FILE [FILE..]
+
+Show, or edit the cvs description tag of FILE.
+This creates a backup of the repository file
+in the current directory, named .backup_FILE,v...
+
+Options are recognized also after the FILE list.
+
+-e              : open $EDITOR to edit the description
+-t 'DESC'       : new description, mandatory quotes
+-f FILE         : read the new description from FILE
+-B              : Delete backup file after successfull update
+FILE(s) -T DESC : Alternative syntax, DESC doesn't need to be quoted 
+                  and can include spaces, this needs to be at the end 
+
+ENDL
+	exit
+fi
+
+
+source cvscommon.sh
+
+loop=1
+opt_t=""
+opt_f=""
+opt_e=""
+opt_B=""
+FILES=""
+
+while [ -n "$1" ] && [ "$loop" == "1" ]; do
+	loop=0
+	if test -e "$1"; then
+		FILES="$FILES $1"
+		#echo f: $1
+		loop=1
+	fi
+	case $1 in
+		-e ) opt_e=1; loop=1;;
+		-t ) shift; opt_t="$1"; loop=1;;
+		-T ) FILES="$2"; shift 2; opt_t="$*"; loop="break";;
+		-f ) shift; opt_f="$1"; loop=1;;
+		-B ) opt_B=1;loop=1;;
+	esac
+
+	if [ "$loop" == "0" ]; then
+		echo unknown option or nonexisting file: $1
+		exit 1
+	fi
+	shift
+done
+
+if test -z "$FILES"; then
+	echo No file?
+	exit 1
+fi
+
+
+function backuprepofile(){
+	local bn=`basename "$1"`
+	BACKUP=`mktemp ".backup_$bn.XXX"`
+	echo Create backup of repository file: $BACKUP
+	run cp "$1" "$BACKUP" 
+	if [ "$?" != "0" ]; then
+		echo error, $?
+		echo Abort
+		echo
+		exit 1
+	fi
+}
+
+
+function descfile(){
+	f="$1"
+	BACKUP=""
+	echo -e $BLUE=== $N
+	echo -e "File: $YELLOW$f$N"
+
+	#verbose cvs log -t $f
+	R=`cvs log -t "$f" 2>&1` 
+	if [ "$?" != "0" ]; then
+		echo -e "$RED$R$N" 
+		#echo Abort 
+		return 1
+	fi
+
+	DESC=`echo "$R" | sed -e '1,/^description/d;/^.......===============/,$d'`
+	rcs=`echo "$R" | sed -nE '1,2{s/^RCS file: //p}'`
+
+	if test -n "$opt_e"; then
+		TMP=`mktemp .tmp_desc.XXXXX`
+		TMP2=`mktemp .tmp_desc.XXXXX`
+		echo "$DESC" > $TMP
+		echo -e "# Edit the description of $f\n# lines starting with # will be removed,\n# an unchanged message aborts" >> $TMP
+		cp $TMP $TMP2
+		edit $TMP
+		diff -q $TMP $TMP2 > /dev/null
+		if [ "$?" == "0" ]; then
+			echo Abort
+		else
+			sed -i -e '/^#/d' "$TMP"
+			backuprepofile "$rcs"
+			run cvs admin -t"$TMP" "$f"
+			rm "$TMP" "$TMP2"
+		fi
+	else
+		if test -n "$opt_t"; then
+			backuprepofile $rcs	
+			run cvs admin -t-\'$opt_t\' "$f"
+		else
+		if test -n "$opt_f"; then
+			backuprepofile $rcs	
+			run cvs admin -t"$opt_f" "$f"
+		else  # show the description only, no edit
+			echo ---
+			echo "$DESC"
+			#echo
+		fi
+		fi
+	fi
+	if test -n "$opt_B" && test -n "$BACKUP"; then
+		rm "$BACKUP"
+	fi
+}
+
+
+for i in $FILES; do
+	descfile "$i"
+done
+
+verbose Ok
+

@@ -1,0 +1,31 @@
+#!/bin/sh
+
+if test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvsls [DIR] [LSOPTIONS]
+
+list files of the project, or within DIR and subdirectories.
+
+This doesn't print directories.
+
+LSOPTIONS are forwarded as 'cvs ls LSOPTIONS'.
+
+ENDL
+	exit
+fi
+
+source cvscommon.sh
+
+
+if [ -n $1 ] && [ -d "$1" ]; then
+	shift
+else
+	chdir $CVSPROJECTROOT
+fi
+
+
+run cvs ls -RF $*
+
+
+
+

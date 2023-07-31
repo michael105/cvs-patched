@@ -1,0 +1,39 @@
+#!/bin/sh
+
+
+if [ "$1" = "-h" ]; then
+	cat << 'ENDL'
+cvslog [OPTIONS] [CVSOPTIONS] [FILE FILE...] [DIR DIR...] 
+
+Show commit history of the current directory (default), 
+or the optionally supplied FILE(s) and / or DIR(s).
+
+CVSOPTIONS are forwarded to cvs.
+
+OPTIONS
+ -a   :  Show the history of the whole project
+ 
+
+ENDL
+	exit
+fi
+
+source cvscommon.sh
+
+
+loop=1
+while [ -n "$1" ] && [ "$loop" == "1" ]; do
+
+	case $1 in
+		"-a") shift; chdir $CVSPROJECTROOT;;
+		*) loop=0;;
+	esac
+
+done
+
+
+
+run cvs log -q $*
+
+
+

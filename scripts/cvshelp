@@ -1,0 +1,120 @@
+#!/bin/sh
+
+CVSNOCFG=1
+source cvscommon.sh
+
+echo -e "
+cvshelp
+$BLUE=======$N
+
+${WHITE}Initialize a new project:
+$LGREEN-------------------------$N
+
+${LCYAN}cvsnew$WHITE NAME$GREY $GRAY[FILES]$N$N
+
+   Setup the project NAME in the current directory, add optional FILES, 
+   create the repository NAME in CVSROOT. 
+   \$CVSDIR ( default: .cvs ) is created.
+   If needed CVSROOT ( default: $HOME/CVSROOT ) is created and initialized.
+
+
+${LCYAN}cvsadd$WHITE FILES$N : Add FILES to the project, directories and files in
+               subdirectories are added with their parent directories (without files)
+
+${LCYAN}cvsam$GREY [MSG]$N  : Commit modifications. Commit message MSG is optional.
+
+-----
+
+${LCYAN}cvslu$N        : List files
+
+${LCYAN}cvslu$N        : List files, not in the project
+
+${LCYAN}cvst$N         : List modified files 
+
+$BLUE===============================================================================
+
+
+${WHITE}options for all scripts 
+$LGREEN-----------------------$N
+
+need to be the first option(s), e.g. 'cvsm --quiet -m "msg"' 
+
+--quiet      : surpress verbose messages
+--help | -H  : show this help
+
+
+
+${WHITE}cvs-patched scripts
+$LGREEN-------------------$N
+
+
+${CYAN}cvs_make_cvsroot$N
+
+	Create the cvsroot repository directory (\$CVSROOT, default: $CVSROOT)
+
+
+${CYAN}cvsadd$N $GRAY[OPTIONS]$N $GRAY[CVSOPTIONS]$N FILE...
+
+	Add files to the project, and commit them into the repository.
+
+
+${CYAN}cvsam$N $GRAY[log message]$N
+
+	commits all changes into the repository.
+
+
+${CYAN}cvsdiff$N $GRAY[CVSOPTIONS]$N FILE
+
+	Show a side to side diff to a previous revision of FILE.
+
+
+${CYAN}cvsinit$N
+
+	Initialize an existing cvs project as cvs-patched project.
+
+
+${CYAN}cvslu$N $GRAY[lsoptions]$N
+
+	list unversioned files.
+
+
+${CYAN}cvsm$N $GRAY[options]$N $GRAY[-m 'log message']$N
+
+	commit changes of versioned files
+
+
+${CYAN}cvsmove$N FROM TO 
+
+	Move files within the project.
+
+
+${CYAN}cvsnew$N projectname $GRAY[options for cvsadd]$N $GRAY[FILE...]$N
+
+	Start a new cvs-patched project in the current directory 
+
+
+${CYAN}cvsls$GRAY [DIR] [LSOPTIONS]$N
+
+	list files of the project, or within DIR and subdirectories.
+
+
+${CYAN}cvst$N $GRAY[options]$N $GRAY[-o 'CVSOPTIONS']$N $GRAY[DIR]$N $GRAY[FILE ...]$N
+
+	Show status of project, display modified files only.
+
+
+$BLUE===============================================================================
+$N
+
+
+Further help is available via SCRIPTNAME -h
+cvs-patched's README
+the cvs documentation in the folder doc,
+   should be installed in /usr/share/doc/cvs and/or /usr/share/cvs 
+the inline help of cvs itself (cvs --help)
+
+$GREY miSc, 2023
+" | less
+
+
+

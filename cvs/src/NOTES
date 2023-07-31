@@ -1,0 +1,56 @@
+
+Notes on the sources
+
+
+modifications by me (misc)
+
+
+added
+-----
+
+
+cvs_prints(...) 
+	variadic macro, prints everything via cvs_output (if needed) or to stdout
+
+cvs_printf(fmt,...)
+	same, but uses printf
+
+
+colors: 
+	macro COLOR(name)
+		return either "", if "noclors" is set (switch -C),
+		or the according color. defined in colors.c
+
+several options. mostly marked with a comment "misc"
+	
+
+---
+
+config is parsed in parseinfo.c
+
+cvs_output should be replaced with cvs_printf
+ (many unneccessary mallocs and calls to strlen)
+
+
+cvs_error is replaced with a macro.
+with the compileswitch _DCVSDEBUG 
+cvs_error now also reports FILE and LINE
+cvs_error is also used for verbose messages at some places.
+
+
+There's a huge bunch of linked lists.
+
+
+Maybe I should have written myself an wrapper to rcs, or sccs.
+But I like a mature and prooved system.
+
+Dates are formatted in a hard to parse format.
+
+Missing checksums.
+
+Missing templates for output.
+
+I didn't even try to understand what server.c does.
+
+
+
