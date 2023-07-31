@@ -26,6 +26,10 @@ static const char *const ls_usage[] ={
 	"\t-R\tList recursively.\n",
 	"\t-r rev\tShow files with revision or tag.\n",
 	"\t-D date\tShow files from date.\n",
+	"\t-f\tShow full path, relative to the current directory\n"
+	"\t-F\tShow full path, list only files\n"
+	"\t-p\tShow full path, list only directries\n"
+	"\t-w\tshow full path and the path in the repository, implies -f\n"
 	"(Specify the --help global option for a list of other help options)\n",
 	NULL
 };
@@ -42,7 +46,11 @@ static bool ls_prune_dirs;
 static char *regexp_match;
 static bool is_rls;
 static bool show_dead_revs;
-
+static int opt_f;
+static int opt_F;
+static int opt_w;
+static int opt_p;
+static char* current_dir;
 
 
 int ls(int argc, char **argv){
@@ -54,6 +62,7 @@ int ls(int argc, char **argv){
 	if ( argc == -1 ) 
 		usage(ls_usage);
 
+	current_dir = 0;
 	entries_format = false;
 	long_format = false;
 	show_tag = NULL;
@@ -67,9 +76,9 @@ int ls(int argc, char **argv){
 
 	while((c = getopt (argc, argv,
 #ifdef SERVER_SUPPORT
-	                    server_active ? "qdelr:D:PR" :
+	                    server_active ? "qdelr:D:PRfFwp" :
 #endif /* SERVER_SUPPORT */
-	                    "delr:D:RP"
+	                    "delr:D:RPfFwp"
 	                   )) != -1){
 		switch(c){
 #ifdef SERVER_SUPPORT
@@ -105,6 +114,19 @@ int ls(int argc, char **argv){
 		case 'R':
 			recurse = true;
 			break;
+		case 'F':
+			opt_F = 1;
+		case 'f':
+			opt_f = 1;
+			break;
+		case 'w':
+			opt_w = 1;
+			opt_f = 1;
+			break;
+		case 'p':
+			opt_p = 1;
+			break;
+
 		case '?':
 		default:
 			usage(ls_usage);
@@ -118,6 +140,12 @@ int ls(int argc, char **argv){
 		cvserr(0, 0, "`-e' & `-l' are mutually exclusive.");
 		usage(ls_usage);
 	}
+
+	if ( opt_f && long_format ){
+		cvserr(0, 0, "`-f', `-F' & `-l' are mutually exclusive.");
+		usage(ls_usage);
+	}
+
 
 	wrap_setup();
 
@@ -236,6 +264,11 @@ struct long_format_data{
 };
 
 static int ls_print(Node *p, void *closure){
+	if ( opt_f ){ //misc
+		int list = 1;
+		cvs_output(p->data,0);
+		
+	} else {
 	if ( long_format ){
 		struct long_format_data *data = p->data;
 		cvs_output_tagged("text", data->header);
@@ -246,6 +279,7 @@ static int ls_print(Node *p, void *closure){
 		cvs_output_tagged("newline", NULL);
 	} else
 		cvs_output(p->data, 0);
+	}
 	return 0;
 }
 
@@ -259,6 +293,9 @@ static int ls_print_dir(Node *p, void *closure){
 		    line before directory headers, to separate the header from the
 		    listing of the previous directory.
 		*/
+		if ( opt_f || opt_p )
+			current_dir = p->key;
+		else {
 		if ( printed )
 			cvs_output("\n", 1);
 		else
@@ -266,9 +303,11 @@ static int ls_print_dir(Node *p, void *closure){
 
 		if ( !strcmp(p->key, "") ) 
 			cvs_output(".", 1);
-		else
+		else {
 			cvs_output(p->key, 0);
+		}
 		cvs_output(":\n", 2);
+		}
 	}
 	walklist(p->data, ls_print, NULL);
 	return 0;
@@ -307,6 +346,10 @@ static int ls_fileproc(void *callerdat, struct file_info *finfo){
 	bool isdead;
 	const char *filename;
 
+	if ( opt_p )
+		return 0;
+
+
 	if ( regexp_match ){
 #ifdef FILENAMES_CASE_INSENSITIVE
 		re_set_syntax(REG_ICASE|RE_SYNTAX_EGREP);
@@ -333,6 +376,7 @@ static int ls_fileproc(void *callerdat, struct file_info *finfo){
 		freevers_ts(&vers);
 		return 0;
 	}
+
 
 	p = findnode(callerdat, finfo->update_dir);
 	if ( !p ){
@@ -378,6 +422,13 @@ static int ls_fileproc(void *callerdat, struct file_info *finfo){
 		                         filename);
 		n->data = out;
 		n->delproc = long_format_data_delproc;
+	} else if ( opt_f ) { // misc all information is here. better than status
+		//printf("O %s\n",finfo->fullname);
+			if ( opt_w )
+				n->data = Xasprintf("%-20s\t%s\n", finfo->fullname, 
+						vers->srcfile != 0 ? vers->srcfile->print_path : "Not present" );
+			else
+				n->data = Xasprintf("%s\n", finfo->fullname);
 	} else
 		n->data = Xasprintf("%s\n", filename);
 
@@ -430,10 +481,19 @@ static Dtype ls_direntproc(void *callerdat, const char *dir, const char *repos,
 			                         show_dead_revs ? "     " : "", dir);
 			n->data = out;
 			n->delproc = long_format_data_delproc;
-		} else
+		} else if ( opt_F ) { //misc
+			// don't show plain directories
+			n->data = 0;
+		} else if ( opt_f ){
+			n->data = Xasprintf("Directory: %s\n",update_dir);
+		} else if ( opt_p ){
+			n->data = Xasprintf("%s\n",update_dir);
+		} else {
 			n->data = Xasprintf("%s\n", dir);
-
-		addnode(p->data, n);
+		}
+		
+		if ( n->data )
+			addnode(p->data, n);
 	}
 
 	if ( !p || recurse ){

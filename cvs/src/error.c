@@ -105,10 +105,10 @@ extern char *strerror(int);
      Sometimes.  ;)
 */
 #ifdef CVSDEBUG
-void _cvserr(char *f,unsigned int ln,int status, int errnum,
+void _cvserr(char *location,int status, int errnum,
                const char *message, ...){
 	if ( f ) // print file and line
-		fprintf(stderr,"error: %s  %d\n",f,ln);
+		fprintf(stderr,"error: %s\n",location);
 #else
 void _cvserr(int status, int errnum, const char *message, ...){
 #endif

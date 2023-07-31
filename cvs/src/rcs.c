@@ -17,6 +17,7 @@
 #include "cvs.h"
 #include "edit.h"
 #include "hardlink.h"
+#include "colors.h"
 
 /* These need to be source after cvs.h or HAVE_MMAP won't be set... */
 #ifdef HAVE_MMAP
@@ -965,6 +966,7 @@ static void rcsbuf_open (struct rcsbuffer *rcsbuf, FILE *fp,
 			mmap_off = ( pos / ps ) * ps;
 		}
 
+		//misc
 		/* Map private here since this particular buffer is read only */
 		rcsbuf_buffer = mmap ( NULL, fs.st_size - mmap_off,
 		                       PROT_READ | PROT_WRITE,
@@ -4628,14 +4630,15 @@ int RCS_checkin (RCSNode *rcs, const char *update_dir, const char *workfile_in,
 
 	checkin_quiet = flags & RCS_FLAGS_QUIET;
 	if ( !(checkin_quiet || really_quiet) ){
-		cvs_output (rcs->path, 0);
-		cvs_output ("  <--  ", 7);
+		cvs_prints( rcs->path, COLOR(commitfilename), "  <--  " );
+		//cvs_output ("  <--  ", 7);
 		if ( update_dir && strlen (update_dir) ){
 			cvs_output (update_dir, 0);
 			cvs_output ("/", 1);
 		}
-		cvs_output (workfile, 0);
-		cvs_output ("\n", 1);
+		//cvs_output (workfile, 0);
+		cvs_prints( workfile, COLOR(norm), "\n" );
+		//cvs_output ("\n", 1);
 	}
 
 	/* Create new delta node. */

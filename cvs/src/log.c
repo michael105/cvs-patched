@@ -18,6 +18,7 @@
 */
 
 #include "cvs.h"
+#include "colors.h"
 #include <assert.h>
 
 /* This structure holds information parsed from the -r option.  */
@@ -144,6 +145,8 @@ static int version_compare(const char *, const char *, int);
 static struct log_data log_data;
 static int is_rlog;
 
+static int opt_q;
+
 static const char *const log_usage[] ={
 	"Usage: %s %s [-lRhtNb] [-r[revisions]] [-d dates] [-s states]\n",
 	"    [-w[logins]] [files...]\n",
@@ -170,6 +173,7 @@ static const char *const log_usage[] ={
 	"\t        \t(D1<D2 for range, D for latest before).\n",
 	"\t-s states\tOnly list revisions with specified states.\n",
 	"\t-w[logins]\tOnly list revisions checked in by specified logins.\n",
+	"\t-q\tShort output \n",
 	"(Specify the --help global option for a list of other help options)\n",
 	NULL
 };
@@ -224,7 +228,7 @@ int cvslog(int argc, char **argv){
 	prl = &log_data.revlist;
 
 	optind = 0;
-	while ( (c = getopt(argc, argv, "+bd:hlNSRr::s:tw::")) != -1 ){
+	while ( (c = getopt(argc, argv, "+bd:hlqNSRr::s:tw::")) != -1 ){
 		switch(c){
 		case 'b':
 			log_data.default_branch = 1;
@@ -262,6 +266,10 @@ int cvslog(int argc, char **argv){
 				log_parse_list(&log_data.authorlist, optarg);
 			else
 				log_parse_list(&log_data.authorlist, "@@MYSELF");
+			break;
+		case 'q':
+			opt_q = 1;
+			quiet = 1;
 			break;
 		case '?':
 		default:
@@ -802,6 +810,20 @@ static int log_fileproc(void *callerdat, struct file_info *finfo){
 		return 0;
 	}
 
+	if ( opt_q ){ //misc
+		//cvs_prints("\n");
+		if ( !is_rlog )
+			cvs_printf("%s%-16s%s\t",COLOR(logfilename),finfo->fullname,COLOR(norm));
+		else
+			cvs_prints("RCS: ",rcsfile->print_path);
+
+		if ( rcsfile->head )
+			cvs_prints(rcsfile->head,"\t");
+		else cvs_prints("\t");
+
+		cvs_prints("\n");
+
+	} else {
 	/*  The output here is intended to be exactly compatible with the
 	    output of rlog.  I'm not sure whether this code should be here
 	    or in rcs.c; I put it here because it is specific to the log
@@ -889,6 +911,7 @@ static int log_fileproc(void *callerdat, struct file_info *finfo){
 		if ( rcsfile->desc != NULL ) 
 			cvs_output(rcsfile->desc, 0);
 	}
+	} // opt_q
 
 	if ( !log_data->header && ! log_data->long_header && rcsfile->head != NULL ){
 		p = findnode(rcsfile->versions, rcsfile->head);
@@ -912,9 +935,12 @@ static int log_fileproc(void *callerdat, struct file_info *finfo){
 		log_tree(log_data, revlist, rcsfile, rcsfile->head);
 	}
 
-	cvs_output("\
-=============================================================================\n",
-	           0);
+	if ( !opt_q )
+		cvs_prints(COLOR(doubledash),
+			"=============================================================================\n",
+	     	COLOR(norm));
+	else
+		cvs_prints("\n");
 
 	/* Free up the new revlist and restore the old one.  */
 	log_free_revlist(revlist);
@@ -1274,6 +1300,14 @@ static int log_symbol(Node *p, void *closure){
 	cvs_output(p->data, 0);
 	return 0;
 }
+static char* q_symbol_name;
+static char* q_symbol_rev;
+// quiet version, retrieve the last symbol and store it in the global 
+static int log_symbol_q(Node *p, void *closure){
+	q_symbol_name = p->key;
+	q_symbol_rev = p->data;
+	return 0;
+}
 
 
 
@@ -1429,7 +1463,67 @@ static void log_version(struct log_data *log_data, struct revlist *revlist,
 	if ( ! log_version_requested(log_data, revlist, rcs, ver) ) 
 		return;
 
-	cvs_output("----------------------------\nrevision ", 0);
+
+	if ( opt_q ){
+		cvs_prints("   ",ver->version,"\t");
+		(void)sscanf(ver->date, SDATEFORM, &year, &mon, &mday, &hour, &min,
+	              &sec);
+		if ( year < 1900 ) 
+			year += 1900;
+		cvs_printf( "%04d-%02d-%02d %02d:%02d   ", year, mon, mday,
+	         hour, min);
+
+		if ( ! trunk ){
+			padd = findnode(ver->other, ";add");
+			pdel = findnode(ver->other, ";delete");
+		} else if ( ver->next == NULL ){
+			padd = NULL;
+			pdel = NULL;
+		} else{
+			Node *nextp;
+			RCSVers *nextver;
+
+			nextp = findnode(rcs->versions, ver->next);
+			if ( nextp == NULL ) 
+				cvserr(1, 0, "missing version `%s' in `%s'", ver->next,
+						rcs->print_path);
+			nextver = nextp->data;
+			pdel = findnode(nextver->other, ";add");
+			padd = findnode(nextver->other, ";delete");
+		}
+
+		if ( padd != NULL ){
+			assert(pdel);
+			cvs_printf("+%-4s -%-4s\t",padd->data, pdel->data);
+		}
+
+
+		p = findnode(ver->other, "log");
+		if ( p == NULL || p->data == NULL || *(char *)p->data == '\0' ) 
+			cvs_prints("* no log message *\n", 0);
+		else{ // log messages
+			/*  FIXME: Technically, the log message could contain a null
+				 byte.  */ // misc - how to fix that??
+			char *s = p->data;
+			char *c;
+			for( c = s; *c; c++ ){
+				if ( *c=='\n' && *(c+1) ){
+					*c=0;
+					cvs_prints("\n\t",s);
+					//cvs_printf("\n\t%*s",c-s,s);
+					s = c+1;
+				}
+			}
+			if ( s==p->data )
+				cvs_prints(s);
+			else 
+				cvs_prints("\n\t",s);
+		}
+
+		return;
+	} 
+
+	cvs_prints(COLOR(smalldash),"----------------------------", COLOR(norm), "\nrevision ");
 	cvs_output(ver->version, 0);
 
 	p = findnode(RCS_getlocks (rcs), ver->version);
@@ -1498,7 +1592,6 @@ static void log_version(struct log_data *log_data, struct revlist *revlist,
 		walklist(ver->branches, log_branch, NULL);
 		cvs_output("\n", 1);
 	}
-
 	p = findnode(ver->other, "log");
 	/*  The p->date == NULL case is the normal one for an empty log
 	    message(rcs-14 in sanity.sh).  I don't think the case where
@@ -1512,6 +1605,8 @@ static void log_version(struct log_data *log_data, struct revlist *revlist,
 	else{
 		/*  FIXME: Technically, the log message could contain a null
 		       byte.  */
+		// misc opt_q : should reformat the msg. (if multiline, to "\n\t",and replace \n with \n\t ) 
+		// also ( evtl) output only the first line, followed with ...
 		cvs_output(p->data, 0);
 		if ( ((char *)p->data)[strlen(p->data) - 1] != '\n' ) 
 			cvs_output("\n", 1);

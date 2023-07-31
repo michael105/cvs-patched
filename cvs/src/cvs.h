@@ -25,9 +25,11 @@
 #endif /* CONFIG_H */
 
 #ifdef CVSDEBUG
-void _cvserr(char *f,unsigned int ln,int status, int errnum,
+#define __STRINGIFY(msg) # msg
+#define _STRINGIFY(msg) __STRINGIFY(msg)
+void _cvserr(char *location,int status, int errnum,
                const char *message, ...);
-#define cvserr(...) _cvserr(__FILE__,__LINE__,__VA_ARGS__)
+#define cvserr(...) _cvserr(__FILE__ ": " __LINE__,__VA_ARGS__)
 #else
 void _cvserr(int status, int errnum, const char *message, ...);
 #define cvserr(...) _cvserr(__VA_ARGS__)
@@ -123,6 +125,7 @@ char *strerror (int);
 /*  Definitions for the CVS Administrative directory and the files it contains.
     Here as #define's to make changing the names a simple task.  */
 
+#if 0
 // miSc
 #define CVSDIRNAME ".cvs"
 #ifdef USE_VMS_FILENAMES
@@ -140,7 +143,7 @@ char *strerror (int);
 #define CVSADM_BASEREV   CVSDIRNAME"/Baserev."
 #define CVSADM_BASEREVTMP CVSDIRNAME"/Baserev.tmp"
 #define CVSADM_TEMPLATE CVSDIRNAME"/Template."
-#else /* USE_VMS_FILENAMES */
+//#else /* USE_VMS_FILENAMES */
 #define	CVSADM		CVSDIRNAME""
 #define	CVSADM_ENT	CVSDIRNAME"/Entries"
 #define	CVSADM_ENTBAK	CVSDIRNAME"/Entries.Backup"
@@ -170,6 +173,14 @@ char *strerror (int);
     in CVSREP currently.  */
 #define CVSREP CVSDIRNAME
 #define CVSREP_FILEATTR CVSDIRNAME"/fileattr"
+#else
+
+ extern char *CVSDIRNAME, *CVSADM, *CVSADM_ENT, *CVSADM_ENTBAK, *CVSADM_ENTLOG, *CVSADM_ENTSTAT,
+		 *CVSADM_REP, *CVSADM_ROOT, *CVSADM_TAG, *CVSADM_NOTIFY, *CVSADM_NOTIFYTMP,
+		 *CVSADM_BASE, *CVSADM_BASEREV, *CVSADM_BASEREVTMP, *CVSADM_TEMPLATE,
+		 *CVSREP, *CVSREP_FILEATTR;
+
+#endif
 
 /*
     Definitions for the CVSROOT Administrative directory and the files it
@@ -382,6 +393,8 @@ extern int really_quiet, quiet;
 extern int use_editor;
 extern int cvswrite;
 extern mode_t cvsumask;
+extern int nocolor;
+extern int cvsorigin;
 
 /* Temp dir abstraction.  */
 /* From main.c.  */
@@ -516,7 +529,9 @@ int unlink_file (const char *f);
 int unlink_file_dir (const char *f);
 
 /*  This is the structure that the recursion processor passes to the
-    fileproc to tell it about a particular file.  */
+    fileproc to tell it about a particular file.  
+misc: finfo
+*/
 struct file_info {
 	/* Name of the file, without any directory component.  */
 	const char *file;
@@ -708,6 +723,8 @@ pid_t waitpid (pid_t, int *, int);
 
     this is usually obtained from a call to Version_TS which takes a
     tag argument for the RCS file if desired
+
+	 misc fileversion info
 */
 struct vers_ts {
 	/*  rcs version user file derives from, from CVS/Entries.
@@ -924,6 +941,10 @@ void cvs_outerr (const char *, size_t);
 void cvs_flusherr (void);
 void cvs_flushout (void);
 void cvs_output_tagged (const char *, const char *);
+
+void _cvs_prints(const char*,...);
+#define cvs_prints(...) _cvs_prints(__VA_ARGS__,0)
+void cvs_printf(const char*,...);
 
 extern const char *global_session_id;
 

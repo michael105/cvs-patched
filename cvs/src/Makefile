@@ -152,7 +152,7 @@ am_cvs_OBJECTS = add.$(OBJEXT) admin.$(OBJEXT) annotate.$(OBJEXT) \
 	scramble.$(OBJEXT) server.$(OBJEXT) stack.$(OBJEXT) \
 	status.$(OBJEXT) subr.$(OBJEXT) tag.$(OBJEXT) update.$(OBJEXT) \
 	version.$(OBJEXT) vers_ts.$(OBJEXT) watch.$(OBJEXT) \
-	wrapper.$(OBJEXT) zlib.$(OBJEXT)
+	wrapper.$(OBJEXT) zlib.$(OBJEXT) colors.$(OBJEXT)
 cvs_OBJECTS = $(am_cvs_OBJECTS)
 am__DEPENDENCIES_1 =
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
@@ -381,7 +381,8 @@ cvs_SOURCES = \
 	root.h \
 	server.h \
 	update.h \
-	watch.h
+	watch.h \
+	colors.c
 
 EXTRA_cvs_SOURCES = gssapi-client.c gssapi-client.h \
                     kerberos4-client.c kerberos4-client.h \

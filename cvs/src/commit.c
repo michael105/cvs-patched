@@ -24,6 +24,7 @@
 #include "edit.h"
 #include "fileattr.h"
 #include "hardlink.h"
+#include "colors.h"
 
 static Dtype check_direntproc(void *callerdat, const char *dir,
                                const char *repos, const char *update_dir,
@@ -1695,13 +1696,15 @@ static int remove_file(struct file_info *finfo, char *tag, char *message){
 	/* Print message that file was removed. */
 	if ( !really_quiet ){
 		cvs_output(old_path, 0);
-		cvs_output("  <--  ", 0);
+		cvs_prints(COLOR(deletefilename),"  <--  ", 0);
 		if ( finfo->update_dir && strlen(finfo->update_dir) ){
-			cvs_output(finfo->update_dir, 0);
-			cvs_output("/", 1);
+			cvs_prints(finfo->update_dir,"/");
 		}
-		cvs_output(finfo->file, 0);
-		cvs_output("\nnew revision: delete; previous revision: ", 0);
+		cvs_prints(finfo->file, COLOR(norm));
+		if ( cvsorigin )
+			cvs_output("\nnew revision: delete; previous revision: ", 0);
+		else
+			cvs_prints("\n\tnew revision: delete; previous revision: ");
 		cvs_output(prev_rev, 0);
 		cvs_output("\n", 0);
 	}
@@ -1723,10 +1726,8 @@ static int finaladd(struct file_info *finfo, char *rev, char *tag,
                      char *options){
 	int ret;
 
-	dbg("finaladd: %s\n%s\n%s\n%s\n===\n",finfo->fullname,finfo->file, finfo->update_dir, finfo->repository );
+	//dbg("finaladd: %s\n%s\n%s\n%s\n===\n",finfo->fullname,finfo->file, finfo->update_dir, finfo->repository );
 	
-	int r = chown( finfo->file, -1, 1012 );
-	dbg("r: %d\n",r);
 	ret = Checkin('A', finfo, rev, tag, options, saved_message);
 	if ( ret == 0 ){
 		char *tmp = Xasprintf("%s/%s%s", CVSADM, finfo->file, CVSEXT_LOG);

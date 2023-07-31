@@ -6887,6 +6887,14 @@ krb_encrypt_buffer_initialize( struct buffer *buf, int input,
 
 
 
+// misc TODO cvs_printf. and this shouldn't be in server.c
+// should be a macro, to be able to compile it with debugging information.
+// (LINE,FILE)
+// Further: cvs_writes to prevent calling strlen. (several times with the current impl)
+// cvs_prints  print without formatting
+// without server support, the current function might be ok.
+// with server support, the buf_output routines are - complicated.
+
 /*  Output LEN bytes at STR.  If LEN is zero, then output up to(not including)
     the first '\0' byte.  */
 void cvs_output(const char *str, size_t len){
@@ -6939,6 +6947,49 @@ void cvs_output(const char *str, size_t len){
 		}
 	}
 }
+
+void _cvs_prints(const char* msg,...){
+	va_list args;
+
+	for ( va_start(args,msg); msg!=0; msg=va_arg(args,const char*) ){
+#ifndef SERVER_SUPPORT
+		fputs(msg,stdout);
+		//cvs_output(msg,strlen(msg));
+#else
+		cvs_output(msg,strlen(msg));
+#endif
+	}
+
+	va_end(args);
+}
+
+
+void cvs_printf(const char* fmt,...){
+
+#ifndef SERVER_SUPPORT
+	va_list args;
+	va_start(args,fmt);
+	vprintf(fmt,args);
+	va_end(args);
+		//cvs_output(msg,strlen(msg));
+#else
+	char *result;
+	va_list args;
+	va_start(args,msg);
+
+	va_start(args, fmt);
+	if ( (result=vasprintf(&result, fmt, args)) < 0 ) 
+		cvserr(1, errno, "Failed to write to string.");
+	va_end(args);
+	cvs_output(result,0);
+	va_end(args);
+	free(result);
+}
+#endif
+
+}
+
+
 
 /*  Output LEN bytes at STR in binary mode.  If LEN is zero, then
     output zero bytes.  */

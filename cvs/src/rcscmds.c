@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include "diffrun.h"
 #include "quotearg.h"
+#include "colors.h"
 
 /*  This file, rcs.h, and rcs.c, together sometimes known as the "RCS
     library", are intended to define our interface to RCS files.
@@ -332,9 +333,10 @@ int RCS_exec_rcsdiff(RCSNode *rcsfile, int diff_argc,
 	int status, retval;
 
 
-	cvs_output("\
-===================================================================\n\
-RCS file: ", 0);
+	if ( cvsorigin )
+	cvs_prints(COLOR(doubledash),
+			"===================================================================\n",
+			COLOR(norm), "RCS file: ", 0);
 	cvs_output(rcsfile->print_path, 0);
 	cvs_output("\n", 1);
 
@@ -499,6 +501,7 @@ int diff_exec(const char *file1, const char *file2, const char *label1,
 	}
 #endif
 
+	// misc
 	/* The first arg to call_diff_setup is used only for error reporting. */
 	call_diff_setup("diff", dargc, dargv);
 	if ( label1 )

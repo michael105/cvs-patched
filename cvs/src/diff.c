@@ -20,6 +20,7 @@
 */
 
 #include "cvs.h"
+#include "colors.h"
 
 enum diff_file{
 	DIFF_ERROR,
@@ -647,9 +648,21 @@ static int diff_fileproc(void *callerdat, struct file_info *finfo){
 		goto out;
 
 	/* Output an "Index:" line for patch to use */
-	cvs_output("Index: ", 0);
-	cvs_output(finfo->fullname, 0);
-	cvs_output("\n", 1);
+	//cvs_output("Index: ", 0);
+	//cvs_output(finfo->fullname, 0);
+	//cvs_output("\n", 1);
+	if ( !cvsorigin )
+			cvs_prints(COLOR(doubledash),"===================================================================\n",COLOR(norm));
+	
+	char *fn = Xasprintf(finfo->fullname);
+	cvs_prints( "Index: ", COLOR(difffilename), fn, COLOR(norm), "\n" );
+	if ( !cvsorigin ){
+		cvs_prints(COLOR(smalldash),"-------");
+		for ( char *p = fn; *p; p++ )
+			*p = '-';
+		cvs_prints(fn,"-\n",COLOR(norm));
+	}
+	free(fn);
 
 	tocvsPath = wrap_tocvs_process_file(finfo->file);
 	if ( tocvsPath ){
@@ -693,9 +706,10 @@ static int diff_fileproc(void *callerdat, struct file_info *finfo){
 		    implementations of patch(are there other implementations?) want
 		    things and the POSIX.2 spec appears to leave room for this.
 		*/
-		cvs_output("\
-===================================================================\n\
-RCS file: ", 0);
+		if ( cvsorigin )
+			cvs_prints(COLOR(doubledash),"===================================================================\n",COLOR(norm));
+		
+		cvs_prints("RCS file: ");
 		cvs_output(finfo->fullname, 0);
 		cvs_output("\n", 1);
 

@@ -16,15 +16,17 @@ fi
 
 source cvscommon.sh
 
+OPT_R="-R"
 
 if [ -n $1 ] && [ -d "$1" ]; then
 	shift
+	OPT_R=""
 else
 	chdir $CVSPROJECTROOT
 fi
 
 
-run cvs ls -RF $*
+run cvs ls $OPT_R -F $*
 
 
 

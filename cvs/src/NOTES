@@ -9,8 +9,13 @@ added
 -----
 
 
+definition switch CVSDEBUG
+  cvserr will also report line and location
+  cvserr is also used for verbose messages at some places.
+
 cvs_prints(...) 
 	variadic macro, prints everything via cvs_output (if needed) or to stdout
+	only for strings, no formatting
 
 cvs_printf(fmt,...)
 	same, but uses printf
@@ -24,19 +29,22 @@ colors:
 several options. mostly marked with a comment "misc"
 	
 
+	todo: diff - marked places, set colors.
+		(getenv?) beste loesung. sonst zersplittert.
+		oder longopts.?
+		 //diff.c in cvs: add option -q quiet
+		 noe. ist schon global implementiert.
+
 ---
+
+notes
 
 config is parsed in parseinfo.c
 
 cvs_output should be replaced with cvs_printf
  (many unneccessary mallocs and calls to strlen)
 
-
-cvs_error is replaced with a macro.
-with the compileswitch _DCVSDEBUG 
-cvs_error now also reports FILE and LINE
-cvs_error is also used for verbose messages at some places.
-
+should also have cvs_fwrite
 
 There's a huge bunch of linked lists.
 

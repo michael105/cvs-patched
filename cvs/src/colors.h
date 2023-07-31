@@ -20,4 +20,23 @@
 #define LMARINE "\033[1;36m"
 #define LCYAN "\033[1;36m"
 #define LWHITE "\033[1;37m"
+
+extern char** statecolor;
+extern char* normcolor;
+extern char** _colors;
+
+#define COLORVARS norm,smalldash,doubledash,commitfilename,deletefilename,difffilename,logfilename
+
+
+const char* _getcolor(int number);
+
+#define COLOR(color) ({ enum { COLORVARS }; _getcolor(color); })
+
+
+void disablecolors();
+	
+void enablecolors();
+
+
+	
 #endif

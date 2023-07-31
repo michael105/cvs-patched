@@ -21,9 +21,6 @@ struct config {
 	char *HistorySearchPath;
 	char *TmpDir;
 
-	//misc
-	gid_t ChangeGroup;
-
 	/*  Should the logmsg be re-read during the do_verify phase?
 	    RereadLogAfterVerify=no|stat|yes
 	    LOGMSG_REREAD_NEVER  - never re-read the logmsg

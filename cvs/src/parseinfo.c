@@ -15,6 +15,8 @@
 #include "getline.h"
 #include "history.h"
 
+#include <grp.h>
+
 /*
     Parse the INFOFILE file for the specified REPOSITORY.  Invoke CALLPROC for
     the first line in the file that matches the REPOSITORY, or if ALL != 0, any
@@ -282,9 +284,6 @@ static inline struct config *new_config(void){
 	new->system_auth = true;
 #endif /* AUTH_SERVER_SUPPORT */
 
-	//misc
-	new->ChangeGroup=-1; //no change	
-
 	return new;
 }
 
@@ -493,8 +492,7 @@ struct config* parse_config(const char *cvsroot, const char *path){
 		}
 
 		*p++ = '\0';
-
-		if ( strcmp(line, "RCSBIN") == 0 ){
+	 if ( strcmp(line, "RCSBIN") == 0 ){
 			/*  This option used to specify the directory for RCS
 			    executables.  But since we don't run them any more,
 			    this is a noop.  Silently ignore it so that a
@@ -658,6 +656,8 @@ struct config* parse_config(const char *cvsroot, const char *path){
 		cvserr(0, errno, "cannot close %s", infopath);
 	if ( freeinfopath ) free(freeinfopath);
 	if ( buf ) free(buf);
+
+
 
 	return retval;
 }

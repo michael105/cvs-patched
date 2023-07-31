@@ -23,6 +23,7 @@
 #include "setenv.h"
 #include "strftime.h"
 #include "xgethostname.h"
+#include "colors.h"
 
 const char *program_name;
 const char *program_path;
@@ -39,12 +40,17 @@ int use_cvsrc = 1;
 int cvswrite = !CVSREAD_DFLT;
 int really_quiet = 0;
 int quiet = 0;
+int nocolor = 0;
 int trace = 0;
 int noexec = 0;
 int readonlyfs = 0;
 int logoff = 0;
+int cvsorigin = 0;
 
-
+char *CVSADM, *CVSADM_ENT, *CVSADM_ENTBAK, *CVSADM_ENTLOG, *CVSADM_ENTSTAT,
+		*CVSADM_REP, *CVSADM_ROOT, *CVSADM_TAG, *CVSADM_NOTIFY, *CVSADM_NOTIFYTMP,
+		*CVSADM_BASE, *CVSADM_BASEREV, *CVSADM_BASEREVTMP, *CVSADM_TEMPLATE,
+		*CVSREP, *CVSREP_FILEATTR, *CVSDIRNAME;
 
 /***
  ***
@@ -295,6 +301,8 @@ static const char *const opt_usage[] ={
 	"    -a           Authenticate all net traffic.\n",
 #endif
 	"    -s VAR=VAL   Set CVS user variable.\n",
+	"    -C           No colors\n",
+	"    -O           Original output format\n",
 	"(Specify the --help option for a list of other help options)\n",
 	NULL
 };
@@ -486,7 +494,7 @@ int main(int argc, char **argv){
 	int help = 0;		/* Has the user asked for help?  This
 				   lets us support the `cvs -H cmd'
 				   convention to give help for cmd. */
-	static const char short_options[] = "+QqrwtnRvb:T:e:d:Hfz:s:xa";
+	static const char short_options[] = "+QqCrwtnRvb:T:e:d:Hfz:s:xaO";
 	static struct option long_options[] ={
 		{"help", 0, NULL, 'H'},
 		{"version", 0, NULL, 'v'},
@@ -549,6 +557,52 @@ int main(int argc, char **argv){
 		logoff = 1;
 	}
 
+	char *co;
+	if ( (co=getenv("CVSNOCOLOR")) && (co[0]!='0') )
+		disablecolors();
+
+	char *cvsdirname = getenv("CVSDIRNAME");
+
+	if ( (co=getenv("CVSORIGIN")) && (co[0]!='0') ) {
+		 if ( !cvsdirname )
+			  cvsdirname = "CVS";
+		 cvsorigin = 1;
+		 disablecolors();
+	}
+	if ( !cvsdirname )
+		 cvsdirname = ".cvs";
+
+
+	CVSADM	= cvsdirname;
+	CVSREP 	= cvsdirname;
+	CVSDIRNAME = cvsdirname;
+
+#ifdef USE_VMS_FILENAMES
+        CVSADM_ENT         = Xasprintf("%s/%s", cvsdirname ,"Entries.");
+        CVSADM_ROOT        = Xasprintf("%s/%s", cvsdirname ,"Root.");
+        CVSADM_TAG         = Xasprintf("%s/%s", cvsdirname ,"Tag.");
+        CVSADM_NOTIFY      = Xasprintf("%s/%s", cvsdirname ,"Notify.");
+        CVSADM_BASEREV     = Xasprintf("%s/%s", cvsdirname ,"Baserev.");
+        CVSADM_TEMPLATE    = Xasprintf("%s/%s", cvsdirname ,"Template.");
+#else
+        CVSADM_ENT         = Xasprintf("%s/%s", cvsdirname ,"Entries");
+        CVSADM_ROOT        = Xasprintf("%s/%s", cvsdirname ,"Root");
+        CVSADM_TAG         = Xasprintf("%s/%s", cvsdirname ,"Tag");
+        CVSADM_NOTIFY      = Xasprintf("%s/%s", cvsdirname ,"Notify");
+        CVSADM_BASEREV     = Xasprintf("%s/%s", cvsdirname ,"Baserev");
+        CVSADM_TEMPLATE    = Xasprintf("%s/%s", cvsdirname ,"Template");
+#endif
+
+        CVSADM_ENTBAK      = Xasprintf("%s/%s", cvsdirname ,"Entries.Backup");
+        CVSADM_ENTLOG      = Xasprintf("%s/%s", cvsdirname ,"Entries.Log");
+        CVSADM_ENTSTAT     = Xasprintf("%s/%s", cvsdirname ,"Entries.Static");
+        CVSADM_REP         = Xasprintf("%s/%s", cvsdirname ,"Repository");
+        CVSADM_NOTIFYTMP   = Xasprintf("%s/%s", cvsdirname ,"Notify.tmp");
+        CVSADM_BASE        = Xasprintf("%s/%s", cvsdirname ,"Base");
+        CVSADM_BASEREVTMP  = Xasprintf("%s/%s", cvsdirname ,"Baserev.tmp");
+        CVSREP_FILEATTR    = Xasprintf("%s/%s", cvsdirname ,"fileattr");
+                                
+	
 	/*  Set this to 0 to force getopt initialization.  getopt() sets
 	    this to 1 internally.  */
 	optind = 0;
@@ -598,6 +652,11 @@ int main(int argc, char **argv){
 	            (argc, argv, short_options, long_options, &option_index))
 	        != EOF){
 		switch(c){
+		case 'O':
+			cvsorigin = 1;
+		case 'C':
+			disablecolors();
+			break;	
 		case 1:
 			/* --help-commands */
 			usage(cmd_usage);

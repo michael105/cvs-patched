@@ -780,9 +780,7 @@ static int add_directory(struct file_info *finfo){
 	free_cwd(&cwd);
 
 	Subdir_Register(entries, NULL, dir);
-	dbg("dir: %s   rcsdir: %s\n",dir,rcsdir);
-	int r = chown(dir,-1,1012);
-	dbg("r: %d\n",r);
+
 
 	if ( !really_quiet )
 		cvs_output(message, 0);
