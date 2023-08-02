@@ -129,7 +129,6 @@ Scriptable output for 'ls' and 'status'
 
 Compatibility with uClibc and musl.
 
-The group of cvs project files is optionally changed to cvs, when they are added.
 
 
 
