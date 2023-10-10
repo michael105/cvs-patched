@@ -1,0 +1,32 @@
+#!/bin/sh
+
+
+if test "$1" = "-h" ; then
+	cat <<'ENDL'
+cvscheckout PROJECT
+
+Checkout a cvs project into the current directory,
+initialize cvs-patched.
+
+
+OPTIONS
+
+ -h   : Show this help
+
+ENDL
+	exit
+fi
+
+source cvscommon.sh
+
+find . | sed -n '2Q1'
+if [ "$?" == "1" ]; then
+	echo Files are present in the current directory
+	error Abort
+fi
+
+cvsinit
+loadcfg
+
+cvs checkout -d . $1
+
