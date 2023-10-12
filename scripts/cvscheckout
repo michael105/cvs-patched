@@ -19,7 +19,7 @@ fi
 
 source cvscommon.sh
 
-find . | sed -n '2Q1'
+find . -maxdepth 1 | sed -n '2Q1' #sed kills find
 if [ "$?" == "1" ]; then
 	echo Files are present in the current directory
 	error Abort

@@ -179,6 +179,7 @@ oloop=1
 while [ -n "$1" ] && [ -n "$oloop" ];do
 	case $1 in 
 		--quiet) opt_quiet=1;;
+		--yes)CONFIRM="N";;
 		-H)cvshelp;exit;;
 		--help)cvshelp;exit;;
 		*) oloop="";;
