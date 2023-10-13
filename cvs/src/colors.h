@@ -1,4 +1,6 @@
-#ifndef NORM
+#ifndef cvs_colors_h
+#define cvs_colors_h
+
 #define NORM "\033[0;38;40m"
 #define BLACK "\033[0;30m"
 #define RED "\033[0;31m"
@@ -29,9 +31,14 @@ extern char** _colors;
 
 
 const char* _getcolor(int number);
+const char* _getstatecolor(int number);
 
 #define COLOR(color) ({ enum { COLORVARS }; _getcolor(color); })
 
+#define STATECOLOR(color) ({ _getstatecolor(color); })
+
+// this expands to the string "", if nocolor is active
+#define NORMCOLOR normcolor
 
 void disablecolors();
 	

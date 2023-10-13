@@ -5,9 +5,9 @@
 
 // colors for the different states
 char* _statecolor[] = { "", // the classify enum starts with 1, the array with "0"..
-	RED, LRED, CYAN, LCYAN,
+	RED, LRED, LMAGENTA, LCYAN,
 	LGREEN, LBLUE, MAGENTA, RED, 
-	LGREEN, LRED, BROWN, "","" }; // empty strings, in case
+	GREEN, YELLOW, BROWN, "","" }; // empty strings, in case
 
 #if 0
  (the enum, defining the states)
@@ -36,7 +36,7 @@ char** statecolor = _statecolor;
 char* _nocolor = "";
  
 //#define COLORVARS norm,smalldash,doubledash,commitfilename,deletefilename,difffilename
-char* __colors[] = { NORM, LGREEN, BLUE, YELLOW, RED, YELLOW, LGREEN };
+char* __colors[] = { NORM, LGREEN, BLUE, LGREEN, RED, YELLOW, LGREEN };
 char** _colors = __colors;
 
 
@@ -45,6 +45,13 @@ const char* _getcolor(int number){
 		return( _nocolor );
 	return( _colors[number] );
 }
+
+const char* _getstatecolor(int number){
+	if ( nocolor )
+		return( _nocolor );
+	return( _statecolor[number] );
+}
+
 
 #define DEFCOLOR(var,color) char* _##var = color; char* var = color
 DEFCOLOR( normcolor, NORM );
@@ -58,7 +65,7 @@ void disablecolors(){
 	normcolor = _nocolor;
 
 	// i know. but this is the quickest way, to make the setting globally
-	// available, also to sub tools.
+	// available, also to sub processes.
 	setenv("CVSNOCOLOR","1",1);
 
 	statecolor = malloc( sizeof( _statecolor ) );
